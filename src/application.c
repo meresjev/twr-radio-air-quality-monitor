@@ -6,9 +6,9 @@
 #define TMP112_PUB_VALUE_CHANGE 0.2f
 #define TMP112_UPDATE_INTERVAL (2 * 1000)
 
-#define VOC_LP_TAG_UPDATE_INTERVAL (5 * 1000)
-#define VOC_LP_TAG_PUB_VALUE_CHANGE 5.0f
-#define VOC_LP_TAG_PUB_NO_CHANGE_INTERVAL (15 * 60 * 1000)
+#define VOC_TAG_UPDATE_INTERVAL (5 * 1000)
+#define VOC_TAG_PUB_VALUE_CHANGE 5.0f
+#define VOC_TAG_PUB_NO_CHANGE_INTERVAL (15 * 60 * 1000)
 
 #define HUMIDITY_TAG_PUB_NO_CHANGE_INTERVAL (15 * 60 * 1000)
 #define HUMIDITY_TAG_PUB_VALUE_CHANGE 5.0f
@@ -87,7 +87,7 @@ void tmp112_event_handler(twr_tmp112_t *self, twr_tmp112_event_t event, void *ev
 void humidity_tag_event_handler(twr_tag_humidity_t *self, twr_tag_humidity_event_t event, void *event_param);
 void barometer_tag_event_handler(twr_tag_barometer_t *self, twr_tag_barometer_event_t event, void *event_param);
 void co2_event_handler(twr_module_co2_event_t event, void *event_param);
-void voc_lp_tag_event_handler(twr_tag_voc_lp_t *self, twr_tag_voc_lp_event_t event, void *event_param);
+void voc_tag_event_handler(twr_tag_voc_t *self, twr_tag_voc_event_t event, void *event_param);
 
 static void lcd_page_render()
 {
@@ -252,20 +252,20 @@ void lcd_event_handler(twr_module_lcd_event_t event, void *event_param)
 }
 
 
-void voc_lp_tag_event_handler(twr_tag_voc_lp_t *self, twr_tag_voc_lp_event_t event, void *event_param)
+void voc_tag_event_handler(twr_tag_voc_t *self, twr_tag_voc_event_t event, void *event_param)
 {
     event_param_t *param = (event_param_t *)event_param;
 
-    if (event == TWR_TAG_VOC_LP_EVENT_UPDATE)
+    if (event == TWR_TAG_VOC_EVENT_UPDATE)
     {
         uint16_t value;
 
-        if (twr_tag_voc_lp_get_tvoc_ppb(self, &value))
+        if (twr_tag_voc_get_tvoc_ppb(self, &value))
         {
-            if ((fabsf(value - param->value) >= VOC_LP_TAG_PUB_VALUE_CHANGE) || (param->next_pub < twr_scheduler_get_spin_tick()))
+            if ((fabsf(value - param->value) >= VOC_TAG_PUB_VALUE_CHANGE) || (param->next_pub < twr_scheduler_get_spin_tick()))
             {
                 param->value = value;
-                param->next_pub = twr_scheduler_get_spin_tick() + VOC_LP_TAG_PUB_NO_CHANGE_INTERVAL;
+                param->next_pub = twr_scheduler_get_spin_tick() + VOC_TAG_PUB_NO_CHANGE_INTERVAL;
 
                 int radio_tvoc = value;
 
@@ -456,11 +456,11 @@ void application_init(void)
     twr_module_co2_set_event_handler(co2_event_handler, &co2_event_param);
 
     // VOC-LP
-    static twr_tag_voc_lp_t voc_lp;
-    static event_param_t voc_lp_event_param = { .next_pub = 0 };
-    twr_tag_voc_lp_init(&voc_lp, TWR_I2C_I2C0);
-    twr_tag_voc_lp_set_event_handler(&voc_lp, voc_lp_tag_event_handler, &voc_lp_event_param);
-    twr_tag_voc_lp_set_update_interval(&voc_lp, VOC_LP_TAG_UPDATE_INTERVAL);
+    static twr_tag_voc_t voc_lp;
+    static event_param_t voc_event_param = { .next_pub = 0 };
+    twr_tag_voc_init(&voc, TWR_I2C_I2C0);
+    twr_tag_voc_set_event_handler(&voc_lp, voc_tag_event_handler, &voc_event_param);
+    twr_tag_voc_set_update_interval(&voc_lp, VOC_TAG_UPDATE_INTERVAL);
 
     // LCD
     memset(&values, 0xff, sizeof(values));
